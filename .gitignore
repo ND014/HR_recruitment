@@ -1,0 +1,39 @@
+# Python virtual environment
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploaded documents / resumes (keep folder structure via .gitkeep)
+uploads/resumes/**/*.pdf
+uploads/resumes/**/*.docx
+uploads/resumes/**/*.doc
+!uploads/**/.gitkeep
+
+# Logs and runtime files
+*.log
+scratch/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE & Editor settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace

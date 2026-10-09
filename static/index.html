@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Candidate Application | Document Submission</title>
+  <link rel="stylesheet" href="/static/style.css?v=8" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    (function() {
+      var saved = localStorage.getItem("candidate_form_theme");
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (saved === "dark" || (!saved && prefersDark)) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    })();
+  </script>
+
+  <!-- React 18 & Babel Standalone (Offline First with CDN fallback) -->
+  <script src="/static/vendor/react.production.min.js"></script>
+  <script src="/static/vendor/react-dom.production.min.js"></script>
+  <script src="/static/vendor/babel.min.js"></script>
+</head>
+<body>
+  <!-- React App Root Container -->
+  <div id="root"></div>
+
+  <!-- React JSX Application Script -->
+  <script type="text/babel" src="/static/app.jsx?v=1"></script>
+</body>
+</html>
