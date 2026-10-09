@@ -1537,8 +1537,203 @@ textarea.notes-input:focus {
 }
 
 /* ==========================================================================
-   Tasks & Reminders View - Clean List Layout
+   Tasks & Reminders View - Split Sections (Pending vs Completed)
    ========================================================================== */
+.task-status-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.task-filter-pills {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.task-filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 0.45rem 0.95rem;
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.task-filter-pill:hover {
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+    color: var(--text-primary);
+}
+
+.task-filter-pill.active {
+    background: #2563EB;
+    border-color: #2563EB;
+    color: #FFFFFF;
+}
+
+.task-filter-pill .pill-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.task-filter-pill .pill-dot.all { background: #64748B; }
+.task-filter-pill .pill-dot.pending { background: #F59E0B; }
+.task-filter-pill .pill-dot.completed { background: #10B981; }
+
+.task-filter-pill.active .pill-dot {
+    background: #FFFFFF;
+}
+
+.task-filter-pill-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 10px;
+    background: #F1F5F9;
+    color: #475569;
+    font-weight: 700;
+    min-width: 18px;
+}
+
+.task-filter-pill.active .task-filter-pill-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: #FFFFFF;
+}
+
+.task-section-group {
+    background: #FFFFFF;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-xs);
+    transition: all 0.2s ease;
+}
+
+.task-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.85rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #F1F5F9;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.task-section-header-title {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.task-section-header-title h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.task-section-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+}
+
+.task-section-icon.pending {
+    background: #FEF3C7;
+    color: #B45309;
+}
+
+.task-section-icon.completed {
+    background: #DCFCE7;
+    color: #15803D;
+}
+
+.task-section-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.15rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.task-section-badge.badge-pending {
+    background: #FEF3C7;
+    color: #B45309;
+}
+
+.task-section-badge.badge-completed {
+    background: #DCFCE7;
+    color: #15803D;
+}
+
+.task-section-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.task-empty-card {
+    text-align: center;
+    padding: 3.5rem 1.5rem;
+    background: #FFFFFF;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-xs);
+    margin-bottom: 1.5rem;
+}
+
+.task-empty-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #EFF6FF;
+    color: #2563EB;
+    margin-bottom: 0.85rem;
+}
+
+.task-empty-subcard {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1.1rem 1.25rem;
+    background: #F8FAFC;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.task-empty-subcard strong {
+    display: block;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    margin-bottom: 0.15rem;
+}
+
 .tasks-list {
     display: flex;
     flex-direction: column;

@@ -454,6 +454,7 @@ async def api_stats():
         in_pipeline = len(pipeline_map)
         stats["approved_awaiting"] = awaiting
         stats["approved_total"] = awaiting  # Badge for approved resumes reflects only awaiting candidates
+        stats["approved_total_pool"] = len(approved_list)
         stats["in_recruitment_pipeline"] = in_pipeline
     except Exception:
         pass

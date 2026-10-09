@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Milky Mist — Internal HR Portal</title>
-    <link rel="stylesheet" href="/static/style.css?v=77">
+    <link rel="stylesheet" href="/static/style.css?v=78">
     <!-- React 18 & Babel Standalone -->
     <script src="/static/vendor/react.production.min.js"></script>
     <script src="/static/vendor/react-dom.production.min.js"></script>
@@ -508,9 +508,99 @@
 
                 <!-- My Tasks List Section -->
                 <div id="myTasksSection">
-                    <div id="myTasksList" class="tasks-list">
-                        <div class="text-center" style="padding:3rem; color:var(--text-secondary);">
-                            Loading tasks...
+                    <!-- Task Filter Toolbar / Status Filter Pills -->
+                    <div class="task-status-filter-bar">
+                        <div class="task-filter-pills" id="taskFilterPillsContainer">
+                            <button type="button" class="task-filter-pill active" id="taskFilterPillAll" data-task-filter="all" onclick="setTaskStatusFilter('all')">
+                                <span class="pill-dot all"></span>
+                                <span>All Tasks</span>
+                                <span class="task-filter-pill-count" id="taskFilterAllCount">0</span>
+                            </button>
+                            <button type="button" class="task-filter-pill" id="taskFilterPillPending" data-task-filter="pending" onclick="setTaskStatusFilter('pending')">
+                                <span class="pill-dot pending"></span>
+                                <span>Pending Action</span>
+                                <span class="task-filter-pill-count" id="taskFilterPendingCount">0</span>
+                            </button>
+                            <button type="button" class="task-filter-pill" id="taskFilterPillCompleted" data-task-filter="completed" onclick="setTaskStatusFilter('completed')">
+                                <span class="pill-dot completed"></span>
+                                <span>Completed</span>
+                                <span class="task-filter-pill-count" id="taskFilterCompletedCount">0</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Overall Empty State (when 0 tasks exist in total) -->
+                    <div id="myTasksEmptyAll" class="task-empty-card hidden">
+                        <div class="task-empty-icon">
+                            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.8">
+                                <path d="M9 11l3 3L22 4"></path>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                            </svg>
+                        </div>
+                        <h4 style="font-size:1.1rem; font-weight:700; color:var(--text-primary); margin-bottom:0.35rem;">No tasks assigned</h4>
+                        <p style="font-size:0.875rem; color:var(--text-secondary); max-width:420px; margin:0 auto;">You currently have no pending tasks or reminders assigned to your account.</p>
+                    </div>
+
+                    <!-- Pending Tasks Group -->
+                    <div class="task-section-group" id="pendingTasksSectionGroup">
+                        <div class="task-section-header">
+                            <div class="task-section-header-title">
+                                <span class="task-section-icon pending">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polyline points="12 6 12 12 16 14"></polyline>
+                                    </svg>
+                                </span>
+                                <h3>Pending Tasks & Action Items</h3>
+                                <span class="task-section-badge badge-pending" id="pendingTasksCountBadge">0</span>
+                            </div>
+                            <span class="task-section-subtitle">Items awaiting your attention or action</span>
+                        </div>
+                        <div id="pendingTasksList" class="tasks-list">
+                            <div class="text-center" style="padding:2rem; color:var(--text-secondary);">
+                                Loading pending tasks...
+                            </div>
+                        </div>
+                        <div id="pendingTasksEmpty" class="task-empty-subcard hidden">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            <div>
+                                <strong>All caught up!</strong>
+                                <span>You have no pending tasks requiring action.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Completed Tasks Group -->
+                    <div class="task-section-group" id="completedTasksSectionGroup">
+                        <div class="task-section-header">
+                            <div class="task-section-header-title">
+                                <span class="task-section-icon completed">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </span>
+                                <h3>Completed Tasks</h3>
+                                <span class="task-section-badge badge-completed" id="completedTasksCountBadge">0</span>
+                            </div>
+                            <span class="task-section-subtitle">Completed reminders and finished action items</span>
+                        </div>
+                        <div id="completedTasksList" class="tasks-list">
+                            <div class="text-center" style="padding:1.5rem; color:var(--text-secondary);">
+                                Loading completed tasks...
+                            </div>
+                        </div>
+                        <div id="completedTasksEmpty" class="task-empty-subcard hidden">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#94A3B8" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <div>
+                                <strong>No completed tasks yet</strong>
+                                <span>Tasks you mark as done will appear here.</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -3130,6 +3220,6 @@
 
     <div id="reactPortalRoot"></div>
     <script type="text/babel" src="/static/admin_react.jsx?v=1"></script>
-    <script src="/static/app.js?v=77"></script>
+    <script src="/static/app.js?v=78"></script>
 </body>
 </html>

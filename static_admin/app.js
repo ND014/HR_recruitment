@@ -88,11 +88,11 @@ async function fetchStats() {
             if (elements.statsTotal) elements.statsTotal.textContent = s.total;
             if (elements.headerTotalCount) elements.headerTotalCount.textContent = s.total;
             if (elements.statsPending) elements.statsPending.textContent = s.pending;
-            if (elements.statsShortlisted) elements.statsShortlisted.textContent = s.approved_total || s.shortlisted;
+            if (elements.statsShortlisted) elements.statsShortlisted.textContent = s.approved_total_pool !== undefined ? s.approved_total_pool : (s.shortlisted ?? 0);
             if (elements.statsRejected) elements.statsRejected.textContent = s.rejected_total;
 
             if (elements.tabCountActive) elements.tabCountActive.textContent = s.pending;
-            if (elements.tabCountApproved) elements.tabCountApproved.textContent = s.approved_total;
+            if (elements.tabCountApproved) elements.tabCountApproved.textContent = (s.approved_awaiting !== undefined) ? s.approved_awaiting : (s.approved_total ?? 0);
             if (elements.tabCountRejected) elements.tabCountRejected.textContent = s.rejected_total;
 
             const navPendingBadge = document.getElementById('navPendingBadge');
@@ -102,7 +102,7 @@ async function fetchStats() {
             }
             const navApprovedBadge = document.getElementById('navApprovedBadge');
             if (navApprovedBadge) {
-                const appCount = s.approved_total || s.shortlisted || 0;
+                const appCount = (s.approved_awaiting !== undefined) ? s.approved_awaiting : (s.approved_total !== undefined ? s.approved_total : 0);
                 navApprovedBadge.textContent = appCount;
                 navApprovedBadge.style.display = appCount > 0 ? 'inline-flex' : 'none';
             }
@@ -1053,68 +1053,149 @@ if (notifViewAllTasksBtn) {
 // ==========================================================================
 // Tasks & Reminders View Logic
 // ==========================================================================
+let currentTaskStatusFilter = 'all';
+
+function setTaskStatusFilter(filter) {
+    currentTaskStatusFilter = filter;
+
+    const pills = document.querySelectorAll('.task-filter-pill');
+    pills.forEach(p => {
+        if (p.getAttribute('data-task-filter') === filter) {
+            p.classList.add('active');
+        } else {
+            p.classList.remove('active');
+        }
+    });
+
+    const pendingSection = document.getElementById('pendingTasksSectionGroup');
+    const completedSection = document.getElementById('completedTasksSectionGroup');
+
+    if (filter === 'all') {
+        if (pendingSection) pendingSection.style.display = '';
+        if (completedSection) completedSection.style.display = '';
+    } else if (filter === 'pending') {
+        if (pendingSection) pendingSection.style.display = '';
+        if (completedSection) completedSection.style.display = 'none';
+    } else if (filter === 'completed') {
+        if (pendingSection) pendingSection.style.display = 'none';
+        if (completedSection) completedSection.style.display = '';
+    }
+}
+
+function renderTaskItemCard(n) {
+    const isDone = n.is_completed;
+    const priorityClass = (n.priority || 'medium').toLowerCase();
+    const formattedDue = n.due_date ? n.due_date.replace('T', ' ') : 'No deadline';
+    const dueDateObj = n.due_date ? new Date(n.due_date) : null;
+    const isOverdue = !isDone && dueDateObj && (Date.now() > dueDateObj.getTime());
+
+    return `
+        <div class="task-list-item priority-${priorityClass} ${isDone ? 'completed' : ''}" id="taskRow_${n.task_id}">
+            <div class="task-list-content">
+                <div class="task-list-top-meta">
+                    <span class="badge-priority ${priorityClass}">${escapeHtml(priorityClass.toUpperCase())}</span>
+                    <span class="task-due-chip ${isOverdue ? 'overdue' : ''}">Due: ${escapeHtml(formattedDue)}</span>
+                    <span class="badge" style="background:#F1F5F9; color:#475569; font-size:0.75rem;">Assigned by: <strong>${escapeHtml(n.created_by)}</strong></span>
+                    ${isDone 
+                        ? '<span class="badge" style="background:#DCFCE7; color:#15803D; font-weight:600;">Completed</span>' 
+                        : (isOverdue 
+                            ? '<span class="badge" style="background:#FEE2E2; color:#B91C1C; font-weight:700;">OVERDUE</span>' 
+                            : '<span class="badge" style="background:#FEF3C7; color:#B45309; font-weight:600;">Pending Action</span>')}
+                </div>
+                <h4 class="task-list-title">${escapeHtml(n.title)}</h4>
+                ${n.description ? `<p class="task-list-desc">${escapeHtml(n.description)}</p>` : ''}
+            </div>
+            <div class="task-list-actions">
+                ${isDone ? `
+                    <button type="button" class="btn-task-action mark-reopen-btn" onclick="handleToggleTaskComplete(${n.task_id}, false)">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 4v6h6"></path>
+                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                        </svg>
+                        <span>Completed — Click to Reopen</span>
+                    </button>
+                ` : `
+                    <button type="button" class="btn-task-action mark-done-btn" onclick="handleToggleTaskComplete(${n.task_id}, true)">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        <span>Mark as Done</span>
+                    </button>
+                `}
+            </div>
+        </div>
+    `;
+}
+
 async function fetchMyTasks() {
-    const listEl = document.getElementById('myTasksList');
-    if (!listEl) return;
+    const pendingListEl = document.getElementById('pendingTasksList');
+    const completedListEl = document.getElementById('completedTasksList');
+    const emptyAllEl = document.getElementById('myTasksEmptyAll');
+    const pendingSectionEl = document.getElementById('pendingTasksSectionGroup');
+    const completedSectionEl = document.getElementById('completedTasksSectionGroup');
+    const pendingEmptyEl = document.getElementById('pendingTasksEmpty');
+    const completedEmptyEl = document.getElementById('completedTasksEmpty');
+
+    const pendingBadge = document.getElementById('pendingTasksCountBadge');
+    const completedBadge = document.getElementById('completedTasksCountBadge');
+    const pillAllCount = document.getElementById('taskFilterAllCount');
+    const pillPendingCount = document.getElementById('taskFilterPendingCount');
+    const pillCompletedCount = document.getElementById('taskFilterCompletedCount');
+    const taskMyCount = document.getElementById('taskMyCount');
+
     try {
         const res = await fetch('/api/notifications');
         const data = await res.json();
         if (data.success && data.data) {
             const notifs = data.data.notifications || [];
+            latestUserTasks = notifs;
+
+            const pendingTasks = notifs.filter(n => !n.is_completed);
+            const completedTasks = notifs.filter(n => n.is_completed);
+
+            // Update badge counts
+            if (pillAllCount) pillAllCount.textContent = notifs.length;
+            if (pillPendingCount) pillPendingCount.textContent = pendingTasks.length;
+            if (pillCompletedCount) pillCompletedCount.textContent = completedTasks.length;
+            if (pendingBadge) pendingBadge.textContent = pendingTasks.length;
+            if (completedBadge) completedBadge.textContent = completedTasks.length;
+            if (taskMyCount) taskMyCount.textContent = notifs.length;
+
             if (notifs.length === 0) {
-                listEl.innerHTML = `
-                    <div style="text-align:center; padding:3rem 1.5rem; background:#FFFFFF; border-radius:8px; border:1px solid var(--border-color); box-shadow:var(--shadow-xs);">
-                        <h3 style="color:var(--text-primary); font-size:1.1rem; margin-bottom:0.35rem; font-weight:600;">No tasks assigned</h3>
-                        <p style="color:var(--text-secondary); font-size:0.85rem;">You currently have no pending tasks or reminders assigned to your account.</p>
-                    </div>
-                `;
+                if (emptyAllEl) emptyAllEl.classList.remove('hidden');
+                if (pendingSectionEl) pendingSectionEl.classList.add('hidden');
+                if (completedSectionEl) completedSectionEl.classList.add('hidden');
                 return;
             }
 
-            listEl.innerHTML = notifs.map(n => {
-                const isDone = n.is_completed;
-                const priorityClass = (n.priority || 'medium').toLowerCase();
-                const formattedDue = n.due_date ? n.due_date.replace('T', ' ') : 'No deadline';
-                const dueDateObj = n.due_date ? new Date(n.due_date) : null;
-                const isOverdue = !isDone && dueDateObj && (Date.now() > dueDateObj.getTime());
+            if (emptyAllEl) emptyAllEl.classList.add('hidden');
+            if (pendingSectionEl) pendingSectionEl.classList.remove('hidden');
+            if (completedSectionEl) completedSectionEl.classList.remove('hidden');
 
-                return `
-                    <div class="task-list-item priority-${priorityClass} ${isDone ? 'completed' : ''}" id="taskRow_${n.task_id}">
-                        <div class="task-list-content">
-                            <div class="task-list-top-meta">
-                                <span class="badge-priority ${priorityClass}">${escapeHtml(priorityClass.toUpperCase())}</span>
-                                <span class="task-due-chip ${isOverdue ? 'overdue' : ''}">Due: ${escapeHtml(formattedDue)}</span>
-                                <span class="badge" style="background:#F1F5F9; color:#475569; font-size:0.75rem;">Assigned by: <strong>${escapeHtml(n.created_by)}</strong></span>
-                                ${isDone 
-                                    ? '<span class="badge" style="background:#DCFCE7; color:#15803D; font-weight:600;">Completed</span>' 
-                                    : (isOverdue 
-                                        ? '<span class="badge" style="background:#FEE2E2; color:#B91C1C; font-weight:700;">OVERDUE</span>' 
-                                        : '<span class="badge" style="background:#FEF3C7; color:#B45309; font-weight:600;">Pending Action</span>')}
-                            </div>
-                            <h4 class="task-list-title">${escapeHtml(n.title)}</h4>
-                            ${n.description ? `<p class="task-list-desc">${escapeHtml(n.description)}</p>` : ''}
-                        </div>
-                        <div class="task-list-actions">
-                            ${isDone ? `
-                                <button type="button" class="btn-task-action mark-reopen-btn" onclick="handleToggleTaskComplete(${n.task_id}, false)">
-                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M1 4v6h6"></path>
-                                        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-                                    </svg>
-                                    <span>Completed — Click to Reopen</span>
-                                </button>
-                            ` : `
-                                <button type="button" class="btn-task-action mark-done-btn" onclick="handleToggleTaskComplete(${n.task_id}, true)">
-                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="20 6 9 17 4 12"></polyline>
-                                    </svg>
-                                    <span>Mark as Done</span>
-                                </button>
-                            `}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            // Render Pending Tasks
+            if (pendingListEl) {
+                if (pendingTasks.length === 0) {
+                    pendingListEl.innerHTML = '';
+                    if (pendingEmptyEl) pendingEmptyEl.classList.remove('hidden');
+                } else {
+                    if (pendingEmptyEl) pendingEmptyEl.classList.add('hidden');
+                    pendingListEl.innerHTML = pendingTasks.map(n => renderTaskItemCard(n)).join('');
+                }
+            }
+
+            // Render Completed Tasks
+            if (completedListEl) {
+                if (completedTasks.length === 0) {
+                    completedListEl.innerHTML = '';
+                    if (completedEmptyEl) completedEmptyEl.classList.remove('hidden');
+                } else {
+                    if (completedEmptyEl) completedEmptyEl.classList.add('hidden');
+                    completedListEl.innerHTML = completedTasks.map(n => renderTaskItemCard(n)).join('');
+                }
+            }
+
+            // Re-apply filter visibility
+            setTaskStatusFilter(currentTaskStatusFilter);
         }
     } catch (e) {
         console.error('Error loading my tasks:', e);
